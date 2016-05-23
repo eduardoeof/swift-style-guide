@@ -1,10 +1,6 @@
-# The Official raywenderlich.com Swift Style Guide.
+# OLX Brasil Swift Style Guide
 
-This style guide is different from others you may see, because the focus is centered on readability for print and the web. We created this style guide to keep the code in our books, tutorials, and starter kits nice and consistent — even though we have many different authors working on the books.
-
-Our overarching goals are conciseness, readability, and simplicity.
-
-Writing Objective-C? Check out our [Objective-C Style Guide](https://github.com/raywenderlich/objective-c-style-guide) too.
+This guide is inspired from [Ray Wenderlich Swift Style Guide](https://github.com/raywenderlich/swift-style-guide/blob/master/README.markdown).
 
 ## Table of Contents
 
@@ -47,8 +43,7 @@ Writing Objective-C? Check out our [Objective-C Style Guide](https://github.com/
   * [Failing Guards](#failing-guards)
 * [Semicolons](#semicolons)
 * [Parentheses](#parentheses)
-* [Copyright Statement](#copyright-statement)
-* [Smiley Face](#smiley-face)
+* [Command Query Separation](#command-query-separation)
 * [Credits](#credits)
 
 
@@ -124,15 +119,22 @@ Following Apple's API Design Guidelines, protocols names that describe what some
 
 ### Enumerations
 
-Following Apple's API Design Guidelines for Swift 3, use lowerCamelCase for enumeration values.
+Use UpperCamelCase for enumeration values.
 
 ```swift
 enum Shape {
-  case rectangle
-  case square
-  case rightTriangle
-  case equilateralTriangle
+  case Rectangle
+  case Square
+  case RightTriangle
+  case EquilateralTriangle
 }
+```
+
+We believe UpperCamelCase are easily to identify when use enum cases with shorter dot sintax.
+
+```
+var object = GeometricObject()
+object.shape = .Rectangle
 ```
 
 ### Prose
@@ -281,14 +283,13 @@ Keep imports minimal. For example, don't import `UIKit` when importing `Foundati
 
 ## Spacing
 
-* Indent using 2 spaces rather than tabs to conserve space and help prevent line wrapping. Be sure to set this preference in Xcode and in the Project settings as shown below:
+* Indent using 4 spaces. Be sure to set this preference in Xcode and in the Project settings as shown below:
 
   ![Xcode indent settings](screens/indentation.png)
   
   ![Xcode Project settings](screens/project_settings.png)
 
 * Method braces and other braces (`if`/`else`/`switch`/`while` etc.) always open on the same line as the statement but close on a new line.
-* Tip: You can re-indent by selecting some code (or ⌘A to select all) and then Control-I (or Editor\Structure\Re-Indent in the menu). Some of the Xcode template code will have 4-space tabs hard coded, so this is a good way to fix that.
 
 **Preferred:**
 ```swift
@@ -339,11 +340,17 @@ Avoid block comments inline with code, as the code should be as self-documenting
 
 ### Which one to use?
 
-Remember, structs have [value semantics](https://developer.apple.com/library/mac/documentation/Swift/Conceptual/Swift_Programming_Language/ClassesAndStructures.html#//apple_ref/doc/uid/TP40014097-CH13-XID_144). Use structs for things that do not have an identity. An array that contains [a, b, c] is really the same as another array that contains [a, b, c] and they are completely interchangeable. It doesn't matter whether you use the first array or the second, because they represent the exact same thing. That's why arrays are structs.
+Always try to use protocols, structs and enums. Use classes just in few scenarios. Inspired in WWDC2015 presentation `Protocol-Oriented Programming in Swift`, classes should be used only when:
 
-Classes have [reference semantics](https://developer.apple.com/library/mac/documentation/Swift/Conceptual/Swift_Programming_Language/ClassesAndStructures.html#//apple_ref/doc/uid/TP40014097-CH13-XID_145). Use classes for things that do have an identity or a specific life cycle. You would model a person as a class because two person objects are two different things. Just because two people have the same name and birthdate, doesn't mean they are the same person. But the person's birthdate would be a struct because a date of 3 March 1950 is the same as any other date object for 3 March 1950. The date itself doesn't have an identity.
+ + Copying and comparing doesn't make sense (e.g.: UIWindow).
+ + Instances lifetime is tied to external effects (e.g.: TemporaryFile)
+ + One unique instance in your system (e.g.: Singletons)
+ + Framework that expects you to subclass or pass an object (don't fight the system)
+ + Swift and Objective-C interoperability.
 
-Sometimes, things should be structs but need to conform to `AnyObject` or are historically modeled as classes already (`NSDate`, `NSSet`). Try to follow these guidelines as closely as possible.
+PS: If you aren't in one of above conditions, you need to believe that POP can do everything that OO does. 
+Even in difficult scenarios, there is a way to resolve it with POP.
+All breaking paradigms are hard to be used in the beggining ;)
 
 ### Example definition
 
@@ -351,39 +358,51 @@ Here's an example of a well-styled class definition:
 
 ```swift
 class Circle: Shape {
-  var x: Int, y: Int
-  var radius: Double
-  var diameter: Double {
-    get {
-      return radius * 2
+    var x: Int, y: Int
+    var radius: Double
+    var diameter: Double {
+        get {
+            return radius * 2
+        }
+        set {
+            radius = newValue / 2
+        }
     }
-    set {
-      radius = newValue / 2
+
+    // MARK: - Init
+
+    init(x: Int, y: Int, radius: Double) {
+        self.x = x
+        self.y = y
+        self.radius = radius
     }
-  }
 
-  init(x: Int, y: Int, radius: Double) {
-    self.x = x
-    self.y = y
-    self.radius = radius
-  }
+    convenience init(x: Int, y: Int, diameter: Double) {
+        self.init(x: x, y: y, radius: diameter / 2)
+    }
 
-  convenience init(x: Int, y: Int, diameter: Double) {
-    self.init(x: x, y: y, radius: diameter / 2)
-  }
+    // MARK: - Public
 
-  func describe() -> String {
-    return "I am a circle at \(centerString()) with an area of \(computeArea())"
-  }
+    public func describe() -> String {
+        return "I am a circle at \(centerString()) with an area of \(computeArea())"
+    }
 
-  override func computeArea() -> Double {
-    return M_PI * radius * radius
-  }
+    // MARK: - Internal
 
-  private func centerString() -> String {
-    return "(\(x),\(y))"
-  }
+    func computeArea() -> Double {
+        return M_PI * radius * radius
+    }
+
+    // MARK: - Private
+
+    private func centerString() -> String {
+        return "(\(x),\(y))"
+    }
 }
+
+// MARK: - CanvasDelegate
+
+extension Circle: CanvasDelegate {}
 ```
 
 The example above demonstrates the following style guidelines:
@@ -392,6 +411,8 @@ The example above demonstrates the following style guidelines:
  + Define multiple variables and structures on a single line if they share a common purpose / context.
  + Indent getter and setter definitions and property observers.
  + Don't add modifiers such as `internal` when they're already the default. Similarly, don't repeat the access modifier when overriding a method.
+ + Use `MARK` to separate methods with differents contexts (init, public, internal, private, ...).
+ + Implement `protocols` with `extension`, not in struct/class/enum body. Use `MARK` to identify the name of the protocol implemented.
 
 
 ### Use of Self
@@ -470,34 +491,35 @@ func reticulateSplines(spline: [Double], adjustmentFactor: Double,
 
 ## Closure Expressions
 
-Use trailing closure syntax only if there's a single closure expression parameter at the end of the argument list. Give the closure parameters descriptive names.
+Use trailing closure syntax only if there's a single closure expression parameter at the end of the argument list. Give the closure parameters descriptive names and add line break for them.
 
 **Preferred:**
 ```swift
 UIView.animateWithDuration(1.0) {
-  self.myView.alpha = 0
+    self.myView.alpha = 0
 }
 
 UIView.animateWithDuration(1.0,
-  animations: {
-    self.myView.alpha = 0
-  },
-  completion: { finished in
-    self.myView.removeFromSuperview()
-  }
+    animations: {
+        self.myView.alpha = 0
+    },
+    completion: { 
+        finished in
+        self.myView.removeFromSuperview()
+    }
 )
 ```
 
 **Not Preferred:**
 ```swift
 UIView.animateWithDuration(1.0, animations: {
-  self.myView.alpha = 0
+    self.myView.alpha = 0
 })
 
 UIView.animateWithDuration(1.0,
-  animations: {
-    self.myView.alpha = 0
-  }) { f in
+    animations: {
+        self.myView.alpha = 0
+}) { f in
     self.myView.removeFromSuperview()
 }
 ```
@@ -505,8 +527,9 @@ UIView.animateWithDuration(1.0,
 For single-expression closures where the context is clear, use implicit returns:
 
 ```swift
-attendeeList.sort { a, b in
-  a > b
+attendeeList.sort { 
+    a, b in
+    a > b
 }
 ```
 
@@ -520,6 +543,24 @@ let value = numbers
    .filter {$0 > 50}
    .map {$0 + 10}
 ```
+
+When closure use `self`, always preferred `[weak self]`, avoid `[unowned self]`. Unowned references have same behaviour as forced unwrapping (!). If `self` is `nil`, the app will crash.
+
+**Preferred:**
+```swift
+UIView.animateWithDuration(1.0) {
+    [weak self] in
+    self?.myView.alpha = 0
+}
+```
+**Not Preferred:**
+```swift
+UIView.animateWithDuration(1.0) {
+    [unowned self] in
+    self.myView.alpha = 0
+}
+```
+
 
 ## Types
 
@@ -937,82 +978,29 @@ if (name == "Hello") {
 }
 ```
 
-## Copyright Statement
+## Command Query Separation
 
-The following copyright statement should be included at the top of every source
-file:
-
-    /**
-     * Copyright (c) 2016 Razeware LLC
-     *
-     * Permission is hereby granted, free of charge, to any person obtaining a copy
-     * of this software and associated documentation files (the "Software"), to deal
-     * in the Software without restriction, including without limitation the rights
-     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-     * copies of the Software, and to permit persons to whom the Software is
-     * furnished to do so, subject to the following conditions:
-     *
-     * The above copyright notice and this permission notice shall be included in
-     * all copies or substantial portions of the Software.
-     *
-     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-     * THE SOFTWARE.
-     */
-
-## Smiley Face
-
-Smiley faces are a very prominent style feature of the raywenderlich.com site! It is very important to have the correct smile signifying the immense amount of happiness and excitement for the coding topic. The closing square bracket `]` is used because it represents the largest smile able to be captured using ASCII art. A closing parenthesis `)` creates a half-hearted smile, and thus is not preferred.
-
-**Preferred:**
-```
-:]
-```
+Inspired on Clean Code book, this principle believes that there are two type of methods: a *command* method that performs an action, and a *query* method that return data. A method should never has both responsabilities. In other words, *Asking a question should not change the answer*.
 
 **Not Preferred:**
+```swift
+private var x: Int
+
+func incrementAndReturnX() -> Int {
+    x += 1
+    return x
+} 
 ```
-:)
-```  
+
+**Preferred:**
+```swift
+private(set) var x: Int
+
+func increment() {
+    x += 1
+} 
+```
 
 ## Credits
 
-[Ray Fix](https://github.com/rayfix) currently maintains this style guide.
-It is a collaborative effort from the most stylish raywenderlich.com team members and its community: 
-
-* [Jawwad Ahmad](https://github.com/jawwad)
-* [Soheil Moayedi Azarpour](https://github.com/moayes)
-* [Scott Berrevoets](https://github.com/Scott90)
-* [Eric Cerney](https://github.com/ecerney)
-* [Sam Davies](https://github.com/sammyd)
-* [Evan Dekhayser](https://github.com/edekhayser)
-* [Jean-Pierre Distler](https://github.com/pdistler)
-* [Colin Eberhardt](https://github.com/ColinEberhardt)
-* [Ray Fix](https://github.com/rayfix)
-* [Joshua Greene](https://github.com/JRG-Developer)
-* [Greg Heo](https://github.com/gregheo)
-* [Matthijs Hollemans](https://github.com/hollance)
-* [Erik Kerber](https://github.com/eskerber)
-* [Christopher LaPollo](https://github.com/elephantronic)
-* [Ben Morrow](https://github.com/benmorrow)
-* [Andy Pereira](https://github.com/macandyp)
-* [Ryan Nystrom](https://github.com/rnystrom)
-* [Andy Obusek](https://github.com/obuseme)
-* [Cesare Rocchi](https://github.com/funkyboy)
-* [Ellen Shapiro](https://github.com/designatednerd)
-* [Marin Todorov](https://github.com/icanzilb)
-* [Chris Wagner](https://github.com/cwagdev)
-* [Ray Wenderlich](https://github.com/rwenderlich)
-* [Jack Wu](https://github.com/jackwu95)
-
-Hat tip to [Nicholas Waynik](https://github.com/ndubbs) and the [Objective-C Style Guide](https://github.com/raywenderlich/objective-c-style-guide) team!
-
-We also draw inspiration from Apple’s reference material on Swift:
-
-* [The Swift API Design Guidelines](https://swift.org/documentation/api-design-guidelines/)
-* [The Swift Programming Language](https://developer.apple.com/library/prerelease/ios/documentation/swift/conceptual/swift_programming_language/index.html)
-* [Using Swift with Cocoa and Objective-C](https://developer.apple.com/library/prerelease/ios/documentation/Swift/Conceptual/BuildingCocoaApps/index.html)
-* [Swift Standard Library Reference](https://developer.apple.com/library/prerelease/ios/documentation/General/Reference/SwiftStandardLibraryReference/index.html)
+[Ray Wenderlich Swift Style Guide](https://github.com/raywenderlich/swift-style-guide/blob/master/README.markdown)
